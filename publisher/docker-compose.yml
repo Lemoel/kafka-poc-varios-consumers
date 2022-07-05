@@ -1,0 +1,83 @@
+version: "3.7"
+
+networks:
+  eventbus_local:
+    name: eventbus_local
+
+volumes:
+  kafka: {}
+
+services:
+  zookeeper:
+    image: debezium/zookeeper:1.5.0.Final
+    container_name: poc-zookeeper
+    hostname: zookeeper
+    ports:
+      - 2181:2181
+    networks:
+      - eventbus_local
+    labels:
+      NAME: zookeeper
+
+  kafka:
+    image: debezium/kafka:1.5.0.Final
+    container_name: poc-kafka
+    hostname: kafka
+    ports:
+      - 9092:9092
+    networks:
+      - eventbus_local
+    environment:
+      BROKER_ID: 1
+      KAFKA_NUM_PARTITIONS: 2
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://172.17.0.1:9092
+      KAFKA_LISTENERS: PLAINTEXT://:9092
+      ZOOKEEPER_CONNECT: zookeeper:2181
+    labels:
+      NAME: kafka
+    volumes:
+      - kafka:/data
+    depends_on:
+      - zookeeper
+
+  connect:
+    image: debezium/connect:1.5.0.Final
+    container_name: poc-connect
+    hostname: connect
+    ports:
+      - 8084:8083
+    networks:
+      - eventbus_local
+    depends_on:
+      - zookeeper
+      - kafka
+    environment:
+      BOOTSTRAP_SERVERS: "kafka:9092"
+      GROUP_ID: 1
+      CONFIG_STORAGE_TOPIC: "config_storage"
+      OFFSET_STORAGE_TOPIC: "offset_storage"
+      STATUS_STORAGE_TOPIC: "status_storage"
+      KAFKA_DEBUG: "true"
+      DEBUG_SUSPEND_FLAG: "n"
+
+  akhq:
+    image: tchiotludo/akhq:latest
+    hostname: akhq
+    container_name: poc-akhq
+    depends_on:
+      - kafka
+    ports:
+      - "9090:8080"
+    networks:
+      - eventbus_local
+    environment:
+      AKHQ_CONFIGURATION: |
+        akhq:
+          connections:
+            docker-kafka-server:
+              properties:
+                bootstrap.servers: "kafka:9092"
+              connect:
+                - name: "connect"
+                  url: "http://connect:8083"
