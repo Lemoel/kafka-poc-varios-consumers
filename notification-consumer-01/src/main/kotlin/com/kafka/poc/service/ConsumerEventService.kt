@@ -17,7 +17,7 @@ class ConsumerEventService {
         groupId = "consumer-group-notification"
     )
     fun execute(record: ConsumerRecord<String, String>) {
-        logger.info { "consumer-notification-01" }
+        logger.info { "notification-consumer-01" }
         logger.info { "key: ${record.key()}" }
         logger.info { "Partition: ${record.partition()}" }
         logger.info { "headers: ${record.headers()}" }

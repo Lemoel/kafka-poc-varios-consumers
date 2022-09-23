@@ -17,7 +17,7 @@ class ConsumerEventService {
         groupId = "consumer-group-financeiro"
     )
     fun execute(record: ConsumerRecord<String, String>) {
-        logger.info { "consumer-02" }
+        logger.info { "financeiro-consumer-02" }
         logger.info { "key: ${record.key()}" }
         logger.info { "Partition: ${record.partition()}" }
         logger.info { "headers: ${record.headers()}" }
